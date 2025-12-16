@@ -23,6 +23,7 @@ import { UserDataProps } from "@/types";
 import Button from "@/components/Button";
 import { useRouter } from "expo-router";
 import { updateProfile } from "@/socket/socketEvent";
+import * as ImagePicker from "expo-image-picker";
 
 const ProfileModel = () => {
   const { user, signOut, updateToken } = useAuth();
@@ -99,6 +100,32 @@ const ProfileModel = () => {
     ]);
   };
 
+  //image picking
+  const onPicImg = async () => {
+    const permissionResult =
+      await ImagePicker.requestMediaLibraryPermissionsAsync();
+
+    if (!permissionResult.granted) {
+      Alert.alert(
+        "Permission required",
+        "Permission to access the media library is required."
+      );
+      return;
+    }
+
+    let result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ["images"],
+      aspect: [4, 3],
+      quality: 0.5,
+    });
+
+    console.log(result);
+
+    if (!result.canceled) {
+      setUserData({ ...userData, avatar: result.assets[0] });
+    }
+  };
+
   const handleLogOut = async () => {
     router.back();
     await signOut();
@@ -117,8 +144,8 @@ const ProfileModel = () => {
 
         <ScrollView contentContainerStyle={styles.form}>
           <View style={styles.avatarConatiner}>
-            <Avatar uri={null} size={180} />
-            <TouchableOpacity style={styles.editIcon}>
+            <Avatar uri={userData.avatar} size={180} />
+            <TouchableOpacity style={styles.editIcon} onPress={onPicImg}>
               <Icons.PencilIcon
                 size={verticalScale(20)}
                 color={colors.neutral800}
