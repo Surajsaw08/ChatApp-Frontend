@@ -24,6 +24,7 @@ import Button from "@/components/Button";
 import { useRouter } from "expo-router";
 import { updateProfile } from "@/socket/socketEvent";
 import * as ImagePicker from "expo-image-picker";
+import { uploadFileToCloudinary } from "@/services/imageService";
 
 const ProfileModel = () => {
   const { user, signOut, updateToken } = useAuth();
@@ -62,15 +63,11 @@ const ProfileModel = () => {
     });
   }, [user]);
 
-  const onSubmit = () => {
-    setLoading(true);
-    // Simulate async operation
-
+  const onSubmit = async () => {
     const { name, avatar } = userData;
 
     if (!name.trim()) {
       Alert.alert("User", "plaease enter your name");
-      setLoading(false);
       return;
     }
 
@@ -79,7 +76,20 @@ const ProfileModel = () => {
       name,
       avatar,
     };
-    setLoading(true);
+
+    if (avatar && avatar?.uri) {
+      setLoading(true);
+      const res = await uploadFileToCloudinary(avatar, "profiles");
+      console.log("result", res);
+      if (res.success) {
+        data.avatar = res.data;
+      } else {
+        Alert.alert("user", res.msg);
+        setLoading(false);
+        return;
+      }
+    }
+
     updateProfile(data);
   };
 
@@ -115,7 +125,8 @@ const ProfileModel = () => {
 
     let result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ["images"],
-      aspect: [4, 3],
+      allowsEditing: true,
+      aspect: [3, 3],
       quality: 0.5,
     });
 
