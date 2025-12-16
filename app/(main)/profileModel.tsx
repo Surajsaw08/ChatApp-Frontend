@@ -22,9 +22,10 @@ import { useAuth } from "@/contexts/authContext";
 import { UserDataProps } from "@/types";
 import Button from "@/components/Button";
 import { useRouter } from "expo-router";
+import { updateProfile } from "@/socket/socketEvent";
 
 const ProfileModel = () => {
-  const { user, signOut } = useAuth();
+  const { user, signOut, updateToken } = useAuth();
   const [loading, setLoading] = useState(false);
   const router = useRouter();
 
@@ -33,6 +34,24 @@ const ProfileModel = () => {
     email: "",
     avatar: null,
   });
+
+  useEffect(() => {
+    updateProfile(processUpdateProfile);
+
+    return () => updateProfile(processUpdateProfile, true);
+  }, []);
+
+  const processUpdateProfile = (res: any) => {
+    console.log("got res :", res);
+    setLoading(false);
+
+    if (res.success) {
+      updateToken(res.data.token);
+      router.back();
+    } else {
+      Alert.alert("user", res.msg);
+    }
+  };
 
   useEffect(() => {
     setUserData({
@@ -55,10 +74,12 @@ const ProfileModel = () => {
     }
 
     // good to go
-
-    setTimeout(() => {
-      setLoading(false);
-    }, 2000);
+    const data = {
+      name,
+      avatar,
+    };
+    setLoading(true);
+    updateProfile(data);
   };
 
   const showAlertMessage = () => {
