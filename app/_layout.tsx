@@ -11,6 +11,10 @@ const StackLayout = () => {
         name="(main)/profileModel"
         options={{ presentation: "modal" }}
       />
+      <Stack.Screen
+        name="(main)/newConversationModel"
+        options={{ presentation: "modal" }}
+      />
     </Stack>
   );
 };

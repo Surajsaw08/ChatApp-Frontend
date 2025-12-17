@@ -4,7 +4,6 @@
     "slug": "chat-app",
     "version": "1.0.0",
     "orientation": "portrait",
-  
     "scheme": "chatapp",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
@@ -38,7 +37,8 @@
             "backgroundColor": "#000000"
           }
         }
-      ]
+      ],
+      "expo-web-browser"
     ],
     "experiments": {
       "typedRoutes": true,
