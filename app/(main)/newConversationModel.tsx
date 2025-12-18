@@ -6,7 +6,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import ScreenWrapper from "@/components/ScreenWrapper";
 import Typo from "@/components/Typo";
@@ -21,6 +21,8 @@ import { useAuth } from "@/contexts/authContext";
 import Button from "@/components/Button";
 import Loading from "@/components/Loading";
 import { verticalScale } from "@/utils/styling";
+import { getContacts, newConversation } from "@/socket/socketEvent";
+import { uploadFileToCloudinary } from "@/services/imageService";
 
 const NewConversationModel = () => {
   const { isGroup } = useLocalSearchParams();
@@ -30,56 +32,119 @@ const NewConversationModel = () => {
   const [groupName, setGroupName] = useState("");
   const [selectedParticipant, setSelectedparticipants] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [conatcts, setContacts] = useState([]);
 
   const { user: currUser } = useAuth();
-  const conatcts = [
-    {
-      id: 1,
-      name: "Suraj",
-      avatar: "https://i.pravatar.cc/150?img=1",
-    },
-    {
-      id: 2,
-      name: "Amit",
-      avatar: "https://i.pravatar.cc/150?img=2",
-    },
-    {
-      id: 3,
-      name: "Rohit",
-      avatar: "https://i.pravatar.cc/150?img=3",
-    },
-    {
-      id: 4,
-      name: "Neha",
-      avatar: "https://i.pravatar.cc/150?img=4",
-    },
-    {
-      id: 5,
-      name: "Pooja",
-      avatar: "https://i.pravatar.cc/150?img=5",
-    },
-    {
-      id: 6,
-      name: "Kunal",
-      avatar: "https://i.pravatar.cc/150?img=6",
-    },
-    {
-      id: 7,
-      name: "Rahul",
-      avatar: "https://i.pravatar.cc/150?img=7",
-    },
-    {
-      id: 8,
-      name: "Sandeep",
-      avatar: "https://i.pravatar.cc/150?img=8",
-    },
-  ];
+
+  useEffect(() => {
+    getContacts(processGetContacts);
+    newConversation(processNewConversation);
+    getContacts(null); // emit the getContacts event
+
+    return () => {
+      getContacts(processGetContacts, true);
+      newConversation(processNewConversation, true);
+    };
+  }, []);
+
+  const processGetContacts = (res: any) => {
+    console.log("got contacts :", res);
+    if (res.success) {
+      setContacts(res.data);
+    }
+  };
+  const processNewConversation = (res: any) => {
+    //console.log("new conversation result :", res);
+    setIsLoading(false);
+    if (res.success) {
+      router.back();
+      router.push({
+        pathname: "/(main)/conversation",
+        params: {
+          id: res.data._id,
+          name: res.data.name,
+          avatar: res.data.avatar,
+          type: res.data.type,
+          participants: JSON.stringify(res.data.participants),
+        },
+      });
+    } else {
+      console.log("Error  fetching /creating conversation :", res.msg);
+      Alert.alert("Error", res.msg);
+    }
+  };
+
+  // const conatcts = [
+  //   {
+  //     id: 1,
+  //     name: "Suraj",
+  //     avatar: "https://i.pravatar.cc/150?img=1",
+  //   },
+  //   {
+  //     id: 2,
+  //     name: "Amit",
+  //     avatar: "https://i.pravatar.cc/150?img=2",
+  //   },
+  //   {
+  //     id: 3,
+  //     name: "Rohit",
+  //     avatar: "https://i.pravatar.cc/150?img=3",
+  //   },
+  //   {
+  //     id: 4,
+  //     name: "Neha",
+  //     avatar: "https://i.pravatar.cc/150?img=4",
+  //   },
+  //   {
+  //     id: 5,
+  //     name: "Pooja",
+  //     avatar: "https://i.pravatar.cc/150?img=5",
+  //   },
+  //   {
+  //     id: 6,
+  //     name: "Kunal",
+  //     avatar: "https://i.pravatar.cc/150?img=6",
+  //   },
+  //   {
+  //     id: 7,
+  //     name: "Rahul",
+  //     avatar: "https://i.pravatar.cc/150?img=7",
+  //   },
+  //   {
+  //     id: 8,
+  //     name: "Sandeep",
+  //     avatar: "https://i.pravatar.cc/150?img=8",
+  //   },
+  // ];
 
   const createGroup = async () => {
     if (!currUser || !groupName.trim() || selectedParticipant.length < 2)
       return;
 
     // create group
+    setIsLoading(true);
+    try {
+      let avatar = null;
+
+      if (groupAvatar) {
+        const uploadResult = await uploadFileToCloudinary(
+          groupAvatar,
+          "group-avatars"
+        );
+        if (uploadResult.success) avatar = uploadResult.data;
+      }
+      newConversation({
+        type: "group",
+        participants: [currUser.id, ...selectedParticipant],
+        name: groupName,
+        avatar,
+      });
+    } catch (error: any) {
+      console.log("Error creating gropu", error);
+      Alert.alert("Error", error.message);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const toggleParticipant = (user: any) => {
@@ -100,6 +165,11 @@ const NewConversationModel = () => {
       toggleParticipant(user);
     } else {
       //start new conversation
+
+      newConversation({
+        type: "direct",
+        participants: [currUser.id, user.id],
+      });
     }
   };
 
