@@ -52,7 +52,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         await connectSocket();
         setToken(storedToken);
         setUser(decode.user);
-        console.log("went to home ", decode.user);
+        // console.log("went to home ", decode.user);
         goToHomePage();
       } catch (error) {
         goToWelcome();
