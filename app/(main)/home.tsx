@@ -11,18 +11,48 @@ import Typo from "@/components/Typo";
 import { colors, radius, spacingX, spacingY } from "@/constants/theme";
 import { useAuth } from "@/contexts/authContext";
 import Button from "@/components/Button";
-import { testSocket } from "@/socket/socketEvent";
+import {
+  getConversation,
+  newConversation,
+  testSocket,
+} from "@/socket/socketEvent";
 import * as Icons from "phosphor-react-native";
 import { verticalScale } from "@/utils/styling";
 import { useRouter } from "expo-router";
 import ConversationItem from "@/components/ConversationItem";
 import Loading from "@/components/Loading";
+import { ConversationProps, ResponseProps } from "@/types";
 
 const Home = () => {
   const { user: currentUser, signOut } = useAuth();
   const router = useRouter();
   const [selectedTab, setSelectedTab] = useState(0);
   const [loading, setLoading] = useState(false);
+  const [conversations, setConversations] = useState<ConversationProps[]>([]);
+
+  useEffect(() => {
+    getConversation(processConversation);
+    newConversation(newConversationHandler);
+    getConversation(null);
+
+    return () => {
+      getConversation(processConversation, true);
+      newConversation(newConversationHandler, true);
+    };
+  }, []);
+
+  const processConversation = (res: ResponseProps) => {
+    // console.log("res :", res);
+    if (res.success) {
+      setConversations(res.data);
+    }
+  };
+
+  const newConversationHandler = (res: ResponseProps) => {
+    if (res.success && res.data?.isNew) {
+      setConversations((prev) => [...prev, res.data]);
+    }
+  };
 
   // useEffect(() => {
   //   testSocket(testSocketCallbackHandler);
@@ -37,92 +67,92 @@ const Home = () => {
   //   console.log("got response from test socket event ", data);
   // };
 
-  const conversations = [
-    {
-      name: "Amit",
-      type: "direct",
-      lastMessage: {
-        senderName: "Amit",
-        content: "Are you free right now?",
-        createdAt: "2025-07-10T09:15:00Z",
-      },
-    },
-    {
-      name: "Project ChapApp",
-      type: "group",
-      lastMessage: {
-        senderName: "Om",
-        content: "Backend deployment is completed.",
-        createdAt: "2025-07-11T14:40:00Z",
-      },
-    },
-    {
-      name: "Rohit",
-      type: "direct",
-      lastMessage: {
-        senderName: "Suraj",
-        content: "I'll update you by evening.",
-        createdAt: "2025-07-12T18:20:00Z",
-      },
-    },
-    {
-      name: "Frontend Team",
-      type: "group",
-      lastMessage: {
-        senderName: "Neha",
-        content: "Please review the pull request.",
-        createdAt: "2025-07-13T10:05:00Z",
-      },
-    },
-    {
-      name: "Design Review",
-      type: "group",
-      lastMessage: {
-        senderName: "Pooja",
-        content: "New UI screens are ready.",
-        createdAt: "2025-07-14T16:30:00Z",
-      },
-    },
-    {
-      name: "Sandeep",
-      type: "direct",
-      lastMessage: {
-        senderName: "Sandeep",
-        content: "Did you check the document I sent?",
-        createdAt: "2025-07-15T12:00:00Z",
-      },
-    },
-    {
-      name: "College Friends",
-      type: "group",
-      lastMessage: {
-        senderName: "Rahul",
-        content: "Weekend plan confirm karo.",
-        createdAt: "2025-07-16T19:45:00Z",
-      },
-    },
-    {
-      name: "DevOps Sync",
-      type: "group",
-      lastMessage: {
-        senderName: "Kunal",
-        content: "Server scaling is done.",
-        createdAt: "2025-07-17T08:50:00Z",
-      },
-    },
-  ];
+  // const conversations = [
+  //   {
+  //     name: "Amit",
+  //     type: "direct",
+  //     lastMessage: {
+  //       senderName: "Amit",
+  //       content: "Are you free right now?",
+  //       createdAt: "2025-07-10T09:15:00Z",
+  //     },
+  //   },
+  //   {
+  //     name: "Project ChapApp",
+  //     type: "group",
+  //     lastMessage: {
+  //       senderName: "Om",
+  //       content: "Backend deployment is completed.",
+  //       createdAt: "2025-07-11T14:40:00Z",
+  //     },
+  //   },
+  //   {
+  //     name: "Rohit",
+  //     type: "direct",
+  //     lastMessage: {
+  //       senderName: "Suraj",
+  //       content: "I'll update you by evening.",
+  //       createdAt: "2025-07-12T18:20:00Z",
+  //     },
+  //   },
+  //   {
+  //     name: "Frontend Team",
+  //     type: "group",
+  //     lastMessage: {
+  //       senderName: "Neha",
+  //       content: "Please review the pull request.",
+  //       createdAt: "2025-07-13T10:05:00Z",
+  //     },
+  //   },
+  //   {
+  //     name: "Design Review",
+  //     type: "group",
+  //     lastMessage: {
+  //       senderName: "Pooja",
+  //       content: "New UI screens are ready.",
+  //       createdAt: "2025-07-14T16:30:00Z",
+  //     },
+  //   },
+  //   {
+  //     name: "Sandeep",
+  //     type: "direct",
+  //     lastMessage: {
+  //       senderName: "Sandeep",
+  //       content: "Did you check the document I sent?",
+  //       createdAt: "2025-07-15T12:00:00Z",
+  //     },
+  //   },
+  //   {
+  //     name: "College Friends",
+  //     type: "group",
+  //     lastMessage: {
+  //       senderName: "Rahul",
+  //       content: "Weekend plan confirm karo.",
+  //       createdAt: "2025-07-16T19:45:00Z",
+  //     },
+  //   },
+  //   {
+  //     name: "DevOps Sync",
+  //     type: "group",
+  //     lastMessage: {
+  //       senderName: "Kunal",
+  //       content: "Server scaling is done.",
+  //       createdAt: "2025-07-17T08:50:00Z",
+  //     },
+  //   },
+  // ];
 
   let directConversation = conversations
-    .filter((item: any) => item.type == "direct")
-    .sort((a: any, b: any) => {
+    .filter((item: ConversationProps) => item.type == "direct")
+    .sort((a: ConversationProps, b: ConversationProps) => {
       const aDate = a?.lastMessage?.createdAt || a.createdAt;
       const bDate = b?.lastMessage?.createdAt || b.createdAt;
       return new Date(bDate).getTime() - new Date(aDate).getTime();
     });
 
   let groupConversation = conversations
-    .filter((item: any) => item.type == "group")
-    .sort((a: any, b: any) => {
+    .filter((item: ConversationProps) => item.type == "group")
+    .sort((a: ConversationProps, b: ConversationProps) => {
       const aDate = a?.lastMessage?.createdAt || a.createdAt;
       const bDate = b?.lastMessage?.createdAt || b.createdAt;
       return new Date(bDate).getTime() - new Date(aDate).getTime();
@@ -195,7 +225,7 @@ const Home = () => {
 
             <View style={styles.conversationList}>
               {selectedTab == 0 &&
-                directConversation.map((item: any, index) => {
+                directConversation.map((item: ConversationProps, index) => {
                   return (
                     <ConversationItem
                       item={item}
@@ -206,7 +236,7 @@ const Home = () => {
                   );
                 })}
               {selectedTab == 1 &&
-                groupConversation.map((item: any, index) => {
+                groupConversation.map((item: ConversationProps, index) => {
                   return (
                     <ConversationItem
                       item={item}

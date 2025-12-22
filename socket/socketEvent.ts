@@ -63,3 +63,19 @@ export const newConversation = (payload: any, off: boolean = false) => {
     socket?.emit("newConversation", payload); //sending payload as data
   }
 };
+
+export const getConversation = (payload: any, off: boolean = false) => {
+  const socket = getSocket();
+
+  if (!socket) {
+    console.log("Socket is not connect");
+  }
+
+  if (off) {
+    socket?.off("getConversation", payload);
+  } else if (typeof payload == "function") {
+    socket?.on("getConversation", payload); //payload as callback for this event
+  } else {
+    socket?.emit("getConversation", payload); //sending payload as data
+  }
+};
