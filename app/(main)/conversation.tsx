@@ -8,7 +8,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import ScreenWrapper from "@/components/ScreenWrapper";
 import Typo from "@/components/Typo";
 import { colors, radius, spacingX, spacingY } from "@/constants/theme";
@@ -25,6 +25,8 @@ import * as ImagePicker from "expo-image-picker";
 import { Image } from "expo-image";
 import Loading from "@/components/Loading";
 import { uploadFileToCloudinary } from "@/services/imageService";
+import { getMessages, newMessage } from "@/socket/socketEvent";
+import { MessageProps, ResponseProps } from "@/types";
 
 const Conversation = () => {
   const { user: currentUser } = useAuth();
@@ -36,7 +38,8 @@ const Conversation = () => {
     type,
   } = useLocalSearchParams();
   const participants = JSON.parse(stringifiedParticipants as string);
-  const [messages, setMessages] = useState("");
+  const [message, setMessage] = useState("");
+  const [messages, setMessages] = useState<MessageProps[]>([]);
   const [selectedFile, setSelectedFile] = useState<{ uri: string } | null>(
     null
   );
@@ -51,7 +54,40 @@ const Conversation = () => {
   if (isDirect && otherParticipant) {
     conversationAvatar = otherParticipant.avatar;
   }
-  let conversationName = isDirect ? otherParticipant.name : name;
+  let conversationName = isDirect ? otherParticipant?.name : name;
+
+  useEffect(() => {
+    newMessage(newMessageHandler);
+    getMessages(messagesHandler);
+
+    getMessages({ conversationId });
+
+    return () => {
+      newMessage(newMessageHandler, true);
+      getMessages(messagesHandler, true);
+    };
+  }, []);
+
+  const newMessageHandler = (res: ResponseProps) => {
+    setLoading(false);
+    // console.log(res.data);
+
+    // this is for when conversationId is same that it update the message in real time.
+    if (res.success) {
+      if (res.data.conversationId == conversationId) {
+        setMessages((prev) => [res.data as MessageProps, ...prev]);
+      }
+    } else {
+      Alert.alert("Error", res.msg);
+    }
+  };
+
+  const messagesHandler = (res: ResponseProps) => {
+    // console.log(res);
+    if (res.success) {
+      setMessages(res.data);
+    }
+  };
 
   const onPickFile = async () => {
     const permissionResult =
@@ -68,11 +104,11 @@ const Conversation = () => {
     let result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ["images"],
       allowsEditing: true,
-      aspect: [4, 3],
+      // aspect: [3, 4],
       quality: 0.2,
     });
 
-    console.log(result);
+    // console.log(result);
 
     if (!result.canceled) {
       setSelectedFile(result.assets[0]);
@@ -80,7 +116,7 @@ const Conversation = () => {
   };
 
   const onSend = async () => {
-    if (!messages.trim() && !selectedFile) return;
+    if (!message.trim() && !selectedFile) return;
     if (!currentUser) return;
     setLoading(true);
     try {
@@ -97,7 +133,21 @@ const Conversation = () => {
           Alert.alert("Error", "failed to send Image");
         }
       }
-      console.log("image :", attachment);
+      // console.log("image :", attachment);
+
+      newMessage({
+        conversationId,
+        sender: {
+          id: currentUser?.id,
+          name: currentUser.name,
+          avatar: currentUser.avatar,
+        },
+        content: message.trim(),
+        attachment,
+      });
+
+      setMessage("");
+      setSelectedFile(null);
     } catch (error) {
       console.log("Error sending message ", error);
       Alert.alert("Error", "failed to send mesage");
@@ -105,119 +155,119 @@ const Conversation = () => {
       setLoading(false);
     }
   };
-  const dummyMesaage = [
-    {
-      id: "msg_10",
-      sender: {
-        id: "user_2",
-        name: "suraj saw",
-        avatar: null,
-      },
-      content: "that would be really nice",
-      createdAt: "10:42 AM",
-      isMe: false,
-    },
-    {
-      id: "msg_9",
-      sender: {
-        id: "me",
-        name: "me",
-        avatar: null,
-      },
-      content: "sdfghjk rtyuicvbn fghj",
-      createdAt: "10:42 AM",
-      isMe: true,
-    },
-    {
-      id: "msg_8",
-      sender: {
-        id: "user_1",
-        name: "om",
-        avatar: null,
-      },
-      content: "that would be really nice",
-      createdAt: "10:42 AM",
-      isMe: false,
-    },
-    {
-      id: "msg_7",
-      sender: {
-        id: "me",
-        name: "me",
-        avatar: null,
-      },
-      content: "that would be really would be really nice nice",
-      createdAt: "08:42 PM",
-      isMe: true,
-    },
-    {
-      id: "msg_6",
-      sender: {
-        id: "user_1",
-        name: "om",
-        avatar: null,
-      },
-      content: "that would be really nice",
-      createdAt: "10:42 AM",
-      isMe: false,
-    },
-    {
-      id: "msg_5",
-      sender: {
-        id: "me",
-        name: "me",
-        avatar: null,
-      },
-      content: "that would be would be really nicertyuicvbn fghj",
-      createdAt: "08:42 PM",
-      isMe: true,
-    },
-    {
-      id: "msg_4",
-      sender: {
-        id: "user_1",
-        name: "om",
-        avatar: null,
-      },
-      content: "that would be really nice",
-      createdAt: "10:42 AM",
-      isMe: false,
-    },
-    {
-      id: "msg_3",
-      sender: {
-        id: "me",
-        name: "me",
-        avatar: null,
-      },
-      content: "that would be rtyuicvbn fghj",
-      createdAt: "08:42 PM",
-      isMe: true,
-    },
-    {
-      id: "msg_2",
-      sender: {
-        id: "user_1",
-        name: "om",
-        avatar: null,
-      },
-      content:
-        "that would be really nicewould be really nicewould be really nice",
-      createdAt: "10:42 AM",
-      isMe: false,
-    },
-    {
-      id: "msg_1",
-      sender: {
-        id: "me",
-        name: "me",
-        avatar: null,
-      },
-      content: "that would be would be really nicertyuicvbn fghj",
-      createdAt: "08:42 PM",
-      isMe: true,
-    },
-  ];
+  // const dummyMesaage = [
+  //   {
+  //     id: "msg_10",
+  //     sender: {
+  //       id: "user_2",
+  //       name: "suraj saw",
+  //       avatar: null,
+  //     },
+  //     content: "that would be really nice",
+  //     createdAt: "10:42 AM",
+  //     isMe: false,
+  //   },
+  //   {
+  //     id: "msg_9",
+  //     sender: {
+  //       id: "me",
+  //       name: "me",
+  //       avatar: null,
+  //     },
+  //     content: "sdfghjk rtyuicvbn fghj",
+  //     createdAt: "10:42 AM",
+  //     isMe: true,
+  //   },
+  //   {
+  //     id: "msg_8",
+  //     sender: {
+  //       id: "user_1",
+  //       name: "om",
+  //       avatar: null,
+  //     },
+  //     content: "that would be really nice",
+  //     createdAt: "10:42 AM",
+  //     isMe: false,
+  //   },
+  //   {
+  //     id: "msg_7",
+  //     sender: {
+  //       id: "me",
+  //       name: "me",
+  //       avatar: null,
+  //     },
+  //     content: "that would be really would be really nice nice",
+  //     createdAt: "08:42 PM",
+  //     isMe: true,
+  //   },
+  //   {
+  //     id: "msg_6",
+  //     sender: {
+  //       id: "user_1",
+  //       name: "om",
+  //       avatar: null,
+  //     },
+  //     content: "that would be really nice",
+  //     createdAt: "10:42 AM",
+  //     isMe: false,
+  //   },
+  //   {
+  //     id: "msg_5",
+  //     sender: {
+  //       id: "me",
+  //       name: "me",
+  //       avatar: null,
+  //     },
+  //     content: "that would be would be really nicertyuicvbn fghj",
+  //     createdAt: "08:42 PM",
+  //     isMe: true,
+  //   },
+  //   {
+  //     id: "msg_4",
+  //     sender: {
+  //       id: "user_1",
+  //       name: "om",
+  //       avatar: null,
+  //     },
+  //     content: "that would be really nice",
+  //     createdAt: "10:42 AM",
+  //     isMe: false,
+  //   },
+  //   {
+  //     id: "msg_3",
+  //     sender: {
+  //       id: "me",
+  //       name: "me",
+  //       avatar: null,
+  //     },
+  //     content: "that would be rtyuicvbn fghj",
+  //     createdAt: "08:42 PM",
+  //     isMe: true,
+  //   },
+  //   {
+  //     id: "msg_2",
+  //     sender: {
+  //       id: "user_1",
+  //       name: "om",
+  //       avatar: null,
+  //     },
+  //     content:
+  //       "that would be really nicewould be really nicewould be really nice",
+  //     createdAt: "10:42 AM",
+  //     isMe: false,
+  //   },
+  //   {
+  //     id: "msg_1",
+  //     sender: {
+  //       id: "me",
+  //       name: "me",
+  //       avatar: null,
+  //     },
+  //     content: "that would be would be really nicertyuicvbn fghj",
+  //     createdAt: "08:42 PM",
+  //     isMe: true,
+  //   },
+  // ];
   return (
     <ScreenWrapper showPattern={true} bgOpacity={0.5}>
       <KeyboardAvoidingView
@@ -235,7 +285,7 @@ const Conversation = () => {
                 isGroup={type == "group"}
               />
               <Typo color={colors.white} size={22} fontWeight={"500"}>
-                {conversationName}
+                {conversationName || "Chat"}
               </Typo>
             </View>
           }
@@ -252,7 +302,7 @@ const Conversation = () => {
         {/* messages */}
         <View style={styles.content}>
           <FlatList
-            data={dummyMesaage}
+            data={messages}
             inverted={true}
             showsVerticalScrollIndicator={false}
             contentContainerStyle={styles.messagesContent}
@@ -267,8 +317,8 @@ const Conversation = () => {
 
         <View style={styles.footer}>
           <Input
-            value={messages}
-            onChangeText={setMessages}
+            value={message}
+            onChangeText={setMessage}
             containerStyle={{
               paddingLeft: spacingY._10,
               paddingRight: scale(65),

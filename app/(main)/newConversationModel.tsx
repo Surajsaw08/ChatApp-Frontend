@@ -48,7 +48,7 @@ const NewConversationModel = () => {
   }, []);
 
   const processGetContacts = (res: any) => {
-    console.log("got contacts :", res);
+    // console.log("got contacts :", res);
     if (res.success) {
       setContacts(res.data);
     }
@@ -192,7 +192,7 @@ const NewConversationModel = () => {
       quality: 0.5,
     });
 
-    console.log(result);
+    // console.log(result);
 
     if (!result.canceled) {
       setGroupAvatar(result.assets[0]);

@@ -130,7 +130,7 @@ const ProfileModel = () => {
       quality: 0.5,
     });
 
-    console.log(result);
+    // console.log(result);
 
     if (!result.canceled) {
       setUserData({ ...userData, avatar: result.assets[0] });
